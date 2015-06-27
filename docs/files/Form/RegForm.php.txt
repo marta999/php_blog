@@ -1,0 +1,104 @@
+<?php
+/**
+ * Sign in form.
+ *
+ * @author Marta Szafraniec <marta.szafraniec@uj.edu.pl>
+ * @link http://wierzba.wzks.uj.edu.pl
+ * @copyright 2015 EPI
+ */
+
+namespace Form;
+
+use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\OptionsResolver\OptionsResolverInterface;
+use Symfony\Component\Validator\Constraints as Assert;
+
+/**
+ * Class RegForm.
+ *
+ * @category Epi
+ * @package Form
+ * @extends AbstractType
+ * @use Symfony\Component\Form\AbstractType
+ * @use Symfony\Component\Form\FormBuilderInterface
+ * @use Symfony\Component\OptionsResolver\OptionsResolverInterface
+ * @use Symfony\Component\Validator\Constraints as Assert
+ */
+class RegForm extends AbstractType
+{
+    /**
+     * Form builder.
+     *
+     * @access public
+     * @param FormBuilderInterface $builder
+     * @param array $options
+     *
+     * @return FormBuilderInterface
+     */
+    public function buildForm(FormBuilderInterface $builder, array $options)
+    {
+        return  $builder->add(
+            'login',
+            'text',
+            array(
+                'constraints' => array(
+                    new Assert\NotBlank(),
+                    new Assert\Length(array('min' => 3, 'max' => 20))
+                )
+            )
+        )
+            ->add(
+                'name',
+                'text',
+                array(
+                    'constraints' => array(
+                        new Assert\NotBlank(),
+                        new Assert\Length(array('max' => 20))
+                    )
+                )
+            )
+            ->add(
+                'surname',
+                'text',
+                array(
+                    'constraints' => array(
+                        new Assert\NotBlank(),
+                        new Assert\Length(array('max' => 20))
+                    )
+                )
+            )
+            ->add(
+                'password',
+                'password',
+                array(
+                    'constraints' => array(
+                        new Assert\NotBlank(),
+                        new Assert\Length(array('min' => 8))
+                    )
+                )
+            )
+            ->add(
+                'confirm_password',
+                'password',
+                array(
+                    'constraints' =>
+                        new Assert\NotBlank(),
+                        new Assert\Length(array('min' => 8))
+                )
+            );
+    }
+
+    /**
+     * Gets form name.
+     *
+     * @access public
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return 'registerForm';
+    }
+}
+
