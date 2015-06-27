@@ -1,0 +1,81 @@
+{# Index action template for Posts controller #}
+{% extends 'base.twig' %}
+
+{% block title %}{{ 'Posts list'|trans }}{% endblock %}
+
+{% block heading %}Blog Marty{% endblock %}
+
+{% block subheading %}Blog o wszystkim i o niczym{% endblock %}
+
+{% block content %}
+
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                {% if is_granted('ROLE_ADMIN') %}
+                    <a href="{{ url('post_add') }}" class="btn btn-success" title="{{ 'Add post'|trans }}">
+                        {{ 'Add post'|trans }}
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                {% for flashMessage in app.session.getFlashBag.get('message') %}
+                    <div class="alert alert-{{ flashMessage.type }}" role="alert">
+                        {{ flashMessage.content }}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+
+    {% for post in posts %}
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-preview">
+                    <a href="{{ url('post_view', {'id': post.id}) }}">
+                        <h2 class="post-title">
+                            {{ post.title|e }}
+                        </h2>
+                        <h3 class="post-subtitle">
+                            {{ post.content|slice(0, 250) }} [...]
+                        </h3>
+                    </a>
+                    <p class="small">Posted by <a href="#">{{ post.author|e }}</a> on {{ post.date_published|format('d.m.Y, H:i') }}</p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    {% endfor %}
+
+    <!-- Pager -->
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="pager">
+                    <li  class="next">
+                    {% if paginator.page > 1 %}
+                        {% set previous = (paginator.page - 1) %}
+                        <a href="{{ url('posts_index', {'page': previous}) }}" title="{{ 'newer posts'|trans }}">{{ 'newer posts'|trans }}</a>
+                    {%  endif %}
+                    </li>
+                    <li  class="next">
+                        {% if paginator.page < paginator.pagesCount %}
+                            {% set next = (paginator.page + 1) %}
+                            <a href="{{ url('posts_index', {'page': next}) }}" title="{{ 'older posts'|trans }}">{{ 'older posts'|trans }}</a>
+                        {% endif  %}
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

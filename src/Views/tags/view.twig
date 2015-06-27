@@ -1,0 +1,31 @@
+{# View action template for Tags controller #}
+{% extends 'base.twig' %}
+
+{% block title %}{{ tag.name|e }}{% endblock %}
+
+{% block heading %}{{ tag.name|e }}{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            {% if tag %}
+                <h2>Posty: {{ tag.name }}</h2>
+            {% else %}
+                <p>{{ "Tag doesn't exists"|trans }}</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            {% if tag_posts %}
+                    {% for post in tag_posts %}
+                        {{ post.title }} <a href="{{ url('post_view', {'id': post.id}) }}" class="btn btn-primary">{{ 'article_view'|trans }}</a>
+                    {% endfor %}
+                </table>
+            {% else %}
+                <p>Nie ma postów oznaczonych takim tagiem :( </p>
+            {% endif %}
+        </div>
+    </div>
+
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends 'base.twig' %}
+
+{% block title %}{{ 'Log in'|trans }}{% endblock %}
+{% block heading %}{{ 'Log in'|trans }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <form action="{{ path('auth_login_check') }}" method="post">
+                {{ form_widget(form) }}
+                <input type="submit" name="submit" class="btn btn-success" value="{{ 'Log in'|trans }}" />
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

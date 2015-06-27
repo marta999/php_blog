@@ -1,0 +1,16 @@
+{% extends 'base.twig' %}
+
+{% block title %}{{ 'Sign in'|trans }}{% endblock %}
+
+{% block content %}
+
+    {% for flashMessage in app.session.getFlashBag.get('message') %}
+        {{ flashMessage.content }}
+    {% endfor %}
+
+    <form action="" method="post" >
+        {{ form_widget(form) }}
+        <input class="btn btn-primary" type="submit" name="Send">
+    </form>
+
+{% endblock %}

@@ -1,0 +1,34 @@
+{% block comments %}
+
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+
+                <a href="{{ url('comments_add', {'id': post.id}) }}"
+                   class="btn btn-success"
+                   title="{{ 'comment_add'|trans }}">{{ 'Add comment'|trans }}</a>
+
+                {% if comments %}
+                    <h4>Komentarze</h4>
+                    {% for comment in comments %}
+                        <div class="thumbnail col-xs-12">
+                            <p>{{ comment.comment }}</p>
+                            {% if is_granted('ROLE_ADMIN') %}
+                                <a href="{{ url('comments_edit', {'id': comment.id}) }}"
+                                   class="btn btn-warning"
+                                   title="{{ 'comments_edit'|trans }}">{{ 'Edit comment'|trans }}</a>
+
+                                <a href="{{ url('comments_delete', {'id': comment.id}) }}"
+                                   class="btn btn-danger"
+                                   title="{{ 'comments_delete'|trans }}">{{ 'Delete comment'|trans }}</a>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>Brak komentarzy</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

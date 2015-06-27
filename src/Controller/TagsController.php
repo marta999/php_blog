@@ -1,0 +1,168 @@
+<?php
+/**
+ * Blog tags controller.
+ *
+ * @author Marta Szafraniec <marta.szafraniec@uj.edu.pl>
+ * @link http://wierzba.wzks.uj.edu.pl/~12_szafraniec
+ * @copyright 2015 EPI
+ */
+
+namespace Controller;
+
+use Silex\Application;
+use Silex\ControllerProviderInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Model\TagsModel;
+use Form\TagForm;
+
+/**
+ * Class TagsController
+ *
+ * @category Controller
+ * @package Controller
+ * @author Marta Szafraniec
+ * @link wierzba.wzks.uj.edu.pl/~12_szafraniec
+ * @uses Silex\Application;
+ * @uses Silex\ControllerProviderInterface;
+ * @uses Symfony\Component\HttpFoundation\Request;
+ * @uses Model\TagsModel;
+ * @uses Form\TagForm;
+ */
+
+class TagsController implements ControllerProviderInterface
+{
+    /**
+     * Data for view.
+     *
+     * @access protected
+     * @var array $view
+     */
+    protected $view = array();
+
+    /**
+     * Tags Model object.
+     *
+     * @var $model
+     * @access protected
+     */
+    protected $model;
+
+    /**
+     * Routing settings.
+     *
+     * @access public
+     * @param Silex\Application $app Silex application
+     */
+    public function connect(Application $app)
+    {
+        $tagsController = $app['controllers_factory'];
+
+        $tagsController->match('/add', array($this, 'addAction'))
+            ->bind('tags_add');
+        $tagsController->match('/add/', array($this, 'addAction'));
+
+        $tagsController->match('/view', array($this, 'viewAction'))
+            ->bind('tags_view');
+        $tagsController->match('/view/', array($this, 'viewAction'));
+
+        $tagsController->match('/delete/{id}', array($this, 'deleteAction'))
+            ->bind('tags_delete');
+        $tagsController->match('/delete/{id}/', array($this, 'deleteAction'));
+
+        $tagsController->get('/{page}', array($this, 'indexAction'))
+            ->value('page', 1)->bind('tags_index');
+        $tagsController->get('/', array($this, 'indexAction'))
+            ->bind('tags');
+
+        return $tagsController;
+    }
+
+    /**
+     * Index action.
+     *
+     * @access public
+     * @param Silex\Application $app Silex application
+     * @param Symfony\Component\HttpFoundation\Request $request Request object
+     * @return string Output
+     */
+    public function indexAction(Application $app, Request $request)
+    {
+        try {
+            $pageLimit = 10;
+            $page = (int) $request->get('page', 1);
+            $tagsModel = new TagsModel($app);
+            $this->view = array_merge(
+                $this->view,
+                $tagsModel->getPaginatedTags($page, $pageLimit)
+            );
+
+        } catch (\PDOException $e) {
+            $app->abort(404, $app['translator']->trans('Tag not found'));
+        }
+        return $app['twig']->render('tags/index.twig', $this->view);
+    }
+
+
+    /**
+     * View action.
+     *
+     * @access public
+     * @param Silex\Application $app Silex application
+     * @param Symfony\Component\HttpFoundation\Request $request Request object
+     * @return string Output
+     */
+    public function viewAction(Application $app, Request $request)
+    {
+        try {
+            $id = (int)$request->get('id', 0);
+            $tagsModel = new TagsModel($app);
+            $tag = $this->model->getPostsFromTag($id['id']);
+        } catch (\PDOException $e) {
+            $app->abort(404, $app['translator']->trans('Tag not found'));
+        }
+        return $app['twig']->render('tags/view.twig', $this->view);
+    }
+
+    /**
+     * Add action.
+     *
+     * @access public
+     * @param Silex\Application $app Silex application
+     * @param Symfony\Component\HttpFoundation\Request $request Request object
+     * @return string Output
+     */
+    public function addAction(Application $app, Request $request)
+    {
+        try {
+            $form = $app['form.factory']
+                ->createBuilder(new TagForm())->getForm();
+            $form->remove('id');
+
+            $form->handleRequest($request);
+
+            if ($form->isValid()) {
+                $data = $form->getData();
+                $postsModel = new TagsModel($app);
+                $postsModel->saveTag($data);
+                return $app->redirect(
+                    $app['url_generator']->generate('tags_index'),
+                    301
+                );
+            }
+
+            $this->view['form'] = $form->createView();
+
+            $app['session']->getFlashBag()->add(
+                'message',
+                array(
+                    'type' => 'success', 'content' => $app['translator']->trans('New tag added.')
+                )
+            );
+
+        } catch (\PDOException $e) {
+            $app->abort(404, $app['translator']->trans('Error occured'));
+        }
+
+        return $app['twig']->render('tags/add.twig', $this->view);
+    }
+}

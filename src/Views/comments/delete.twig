@@ -1,0 +1,17 @@
+{# Delete action template for Comments controller #}
+{% extends 'base.twig' %}
+
+{% block title %}{{ 'Delete comment'|trans }}{% endblock %}
+
+{% block heading %}{{ 'Delete comment'|trans }}{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="text-center">
+        <p>  {{ 'Do you really want to delete this'|trans }}?</p>
+            <form action="#" method="post">
+                {{ form_widget(form) }}
+            </form>
+        </div>
+    </div>
+{% endblock %}

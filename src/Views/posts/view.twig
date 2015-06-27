@@ -1,0 +1,80 @@
+{# View action template for Posts controller #}
+{% extends 'base.twig' %}
+
+{% block title %}{{ post.title|e }}{% endblock %}
+
+{% block heading %}{{ post.title|e }}{% endblock %}
+
+{% block content %}
+
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                {% for flashMessage in app.session.getFlashBag.get('message') %}
+                    <div class="alert alert-{{ flashMessage.type }}" role="alert">
+                        {{ flashMessage.content }}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                    {% if is_granted('ROLE_ADMIN') %}
+                    <a href="{{ url('post_edit', {'id': post.id}) }}" class="btn btn-warning" title="{{ 'Edit post'|trans }}">{{ 'Edit post'|trans }}</a>
+                    <a href="{{ url('post_delete', {'id': post.id}) }}" class="btn btn-danger" title="{{ 'Delete post'|trans }}">{{ 'Delete post'|trans }}</a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                    <p>{{ post.content|e }}</p>
+                    <p class="small">Posted by <a href="#">{{ post.author|e }}</a> on {{ post.date_published|format('d.m.Y, H:i') }}</p>
+                    {% if post.date_edited != 0 %}
+                    <p class="small">Edited on {{ post.date_edited|format('d.m.Y, H:i') }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </article>
+
+
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+
+                <a href="{{ url('comments_add', {'id': post.id}) }}"
+                   class="btn btn-success"
+                   title="{{ 'comment_add'|trans }}">{{ 'Add comment'|trans }}</a>
+
+                {% if comments %}
+                <h4>Komentarze</h4>
+                {% for comment in comments %}
+                    <div class="thumbnail col-xs-12">
+                        <p>{{ comment.comment }}</p>
+                        {% if is_granted('ROLE_ADMIN') %}
+                            <a href="{{ url('comments_edit', {'id': comment.id}) }}"
+                               class="btn btn-warning"
+                               title="{{ 'comments_edit'|trans }}">{{ 'Edit comment'|trans }}</a>
+
+                            <a href="{{ url('comments_delete', {'id': comment.id}) }}"
+                               class="btn btn-danger"
+                               title="{{ 'comments_delete'|trans }}">{{ 'Delete comment'|trans }}</a>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>Brak komentarzy</p>
+            {% endif %}
+            </div>
+        </div>
+    </div>
+
+
+
+
+{% endblock %}

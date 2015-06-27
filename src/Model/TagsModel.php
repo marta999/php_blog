@@ -1,0 +1,179 @@
+<?php
+/**
+ * Tags model.
+ *
+ * @author Marta Szafraniec <marta.szafraniec@uj.edu.pl>
+ * @link http://wierzba.wzks.uj.edu.pl/~12_szafraniec
+ * @copyright 2015 EPI
+ */
+
+namespace Model;
+
+use Silex\Application;
+
+/**
+ * Class TagsModel.
+ *
+ * @category Epi
+ * @package Model
+ * @use Silex\Application
+ */
+class TagsModel
+{
+    /**
+     * Db object.
+     *
+     * @access protected
+     * @var Silex\Provider\DoctrineServiceProvider $db
+     */
+    protected $db;
+
+    /**
+     * Object constructor.
+     *
+     * @access public
+     * @param Silex\Application $app Silex application
+     */
+    public function __construct(Application $app)
+    {
+        try {
+            $this->db = $app['db'];
+        } catch (Exception $e) {
+            echo 'Caught exception: ' .  $e->getMessage() . "\n";
+        }
+    }
+
+    /**
+     * Counts tags pages.
+     *
+     * @access public
+     * @param integer $limit Number of records on single page
+     * @return integer Result
+     */
+    public function countTagsPages($limit)
+    {
+        try {
+            $pagesCount = 0;
+            $sql = 'SELECT COUNT(*) as pages_count FROM posts';
+            $result = $this->db->fetchAssoc($sql);
+            if ($result) {
+                $pagesCount =  ceil($result['pages_count']/$limit);
+            }
+            return $pagesCount;
+        } catch (Exception $e) {
+            echo 'Caught exception: ' .  $e->getMessage() . "\n";
+        }
+    }
+
+    /**
+     * Returns current tags number.
+     *
+     * @access public
+     * @param integer $page Page number
+     * @param integer $pagesCount Number of all pages
+     * @return integer Page number
+     *
+     */
+    public function getCurrentPageNumber($page, $pagesCount)
+    {
+        try {
+            return (($page <= 1) || ($page > $pagesCount)) ? 1 : $page;
+        } catch (Exception $e) {
+            echo 'Caught exception: ' .  $e->getMessage() . "\n";
+        }
+    }
+
+    /**
+     * Get all posts on page
+     *
+     * @access public
+     * @param integer $page Page number
+     * @param integer $limit Number of records on single page
+     * @param integer $pagesCount Number of all pages
+     * @retun array Result
+     */
+    public function getTagsPage($page, $limit)
+    {
+        try {
+            $sql = 'SELECT id, name FROM tags ORDER BY name ASC LIMIT :start, :limit';
+            $statement = $this->db->prepare($sql);
+            $statement->bindValue('start', ($page-1)*$limit, \PDO::PARAM_INT);
+            $statement->bindValue('limit', $limit, \PDO::PARAM_INT);
+            $statement->execute();
+            return $statement->fetchAll();
+        } catch (Exception $e) {
+            echo 'Caught exception: ' .  $e->getMessage() . "\n";
+        }
+    }
+
+    /**
+     * Gets tags for pagination.
+     *
+     * @access public
+     * @param integer $page Page number
+     * @param integer $limit Number of records on single page
+     *
+     * @return array Result
+     */
+    public function getPaginatedTags($page, $limit)
+    {
+        try {
+            $pagesCount = $this->countTagsPages($limit);
+
+            $page = $this->getCurrentPageNumber($page, $pagesCount);
+            $tags = $this->getTagsPage($page, $limit);
+
+            return array(
+                'tags' => $tags,
+                'paginator' => array('page' => $page, 'pagesCount' => $pagesCount)
+            );
+        } catch (Exception $e) {
+            echo 'Caught exception: ' .  $e->getMessage() . "\n";
+        }
+    }
+
+    /**
+     * Gets single tag data.
+     *
+     * @access public
+     * @param integer $id Record Id
+     * @return array Result
+     */
+    public function getPostsFromTag($id)
+    {
+        try {
+            $sql = 'SELECT posts.title FROM posts
+                  JOIN posts_has_many_tags
+                  ON posts.id = posts_has_many_tags.posts_id
+                  WHERE posts_has_many_tags.tags_id = ?';
+            return $this->db->fetchAll($sql, array($id));
+        } catch (Exception $e) {
+            echo 'Caught exception: ' .  $e->getMessage() . "\n";
+        }
+    }
+
+    /** Save tag
+    *
+    * @access public
+    * @param array $post Post data
+    * @retun mixed Result
+    */
+    public function saveTag($tag)
+    {
+        try {
+            if (isset($tag['id'])
+                && ($tag['id'] != '')
+                && ctype_digit((string)$tag['id'])) {
+                // update record
+                $id = $tag['id'];
+                unset($tag['id']);
+                return $this->db->update('tags', $tag, array('id' => $id));
+            } else {
+                // add new record
+                return $this->db->insert('tags', $tag);
+            }
+        } catch (Exception $e) {
+            echo 'Caught exception: ' .  $e->getMessage() . "\n";
+        }
+    }
+}

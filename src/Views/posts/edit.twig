@@ -1,0 +1,21 @@
+{# Edit action template for Comments controller #}
+{% extends 'base.twig' %}
+
+{% block title %}{{ 'Edit post'|trans }}{% endblock %}
+
+{% block heading %}{{ post.title|e }}{% endblock %}
+
+{% block content %}
+
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <form action="{{ url('post_edit', {'id' : post.id}) }}" method="post">
+                    {{ form_widget(form) }}
+                    <input type="submit" name="submit" value="{{ 'Save'|trans }}" />
+                </form>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

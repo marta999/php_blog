@@ -1,0 +1,420 @@
+<?php
+/**
+ * Users model.
+ *
+ * @author Marta Szafraniec <marta.szafraniec@uj.edu.pl>
+ * @link http://wierzba.wzks.uj.edu.pl/~12_szafraniec
+ * @copyright 2015 EPI
+ */
+
+namespace Model;
+
+use Doctrine\DBAL\DBALException;
+use Silex\Application;
+use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
+use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
+
+/**
+ * Class Users.
+ *
+ * @category Epi
+ * @package Model
+ * @use Silex\Application
+ */
+class UsersModel
+{
+    /**
+     * Db object.
+     *
+     * @access protected
+     * @var Silex\Provider\DoctrineServiceProvider $db
+     */
+    protected $db;
+
+    /**
+     * Object constructor.
+     *
+     * @access public
+     * @param Silex\Application $app Silex application
+     */
+    public function __construct(Application $app)
+    {
+        $this->db = $app['db'];
+    }
+
+    /**
+     * Loads user by login.
+     *
+     * @access public
+     * @param string $login User login
+     * @throws UsernameNotFoundException
+     * @return array Result
+     */
+    public function loadUserByLogin($login)
+    {
+        $user = $this->getUserByLogin($login);
+
+        if (!$user || !count($user)) {
+            throw new UsernameNotFoundException(
+                sprintf('Username "%s" does not exist.', $login)
+            );
+        }
+
+        $roles = $this->getUserRoles($user['id']);
+
+        if (!$roles || !count($roles)) {
+            throw new UsernameNotFoundException(
+                sprintf('Username "%s" does not exist.', $login)
+            );
+        }
+
+        return array(
+            'login' => $user['login'],
+            'password' => $user['password'],
+            'roles' => $roles
+        );
+
+    }
+
+    /**
+     * Gets user data by login.
+     *
+     * @access public
+     * @param string $login User login
+     *
+     * @return array Result
+     */
+    public function getUserByLogin($login)
+    {
+        try {
+            $query = '
+              SELECT
+                `id`, `login`, `password`, `role_id`
+              FROM
+                `users_blog`
+              WHERE
+                `login` = :login and is_active = 1
+            ';
+            $statement = $this->db->prepare($query);
+            $statement->bindValue('login', $login, \PDO::PARAM_STR);
+            $statement->execute();
+            $result = $statement->fetchAll(\PDO::FETCH_ASSOC);
+            return !$result ? array() : current($result);
+        } catch (\PDOException $e) {
+            return array();
+        }
+    }
+
+    /**
+     * Gets user data by id.
+     *
+     * @access public
+     * @param int $id User id
+     *
+     * @return array Result
+     */
+    public function getUserById($id)
+    {
+        try {
+            $query = '
+              SELECT
+                `id`, `login`, `role_id`, name, surname
+              FROM
+                `users_blog`
+              WHERE
+                `id` = :id
+            ';
+            $statement = $this->db->prepare($query);
+            $statement->bindValue('id', $id, \PDO::PARAM_STR);
+            $statement->execute();
+            $result = $statement->fetchAll(\PDO::FETCH_ASSOC);
+            return !$result ? array() : current($result);
+        } catch (\PDOException $e) {
+            return array();
+        }
+    }
+
+    /**
+     * Gets user roles by User ID.
+     *
+     * @access public
+     * @param integer $userId User ID
+     *
+     * @return array Result
+     */
+    public function getUserRoles($userId)
+    {
+        $roles = array();
+        try {
+            $query = '
+                SELECT
+                    `roles_blog`.`name` as `role`
+                FROM
+                    `users_blog`
+                INNER JOIN
+                    `roles_blog`
+                ON `users_blog`.`role_id` = `roles_blog`.`id`
+                WHERE
+                    `users_blog`.`id` = :user_id
+                ';
+            $statement = $this->db->prepare($query);
+            $statement->bindValue('user_id', $userId, \PDO::PARAM_INT);
+            $statement->execute();
+            $result = $statement->fetchAll(\PDO::FETCH_ASSOC);
+            if ($result && count($result)) {
+                $result = current($result);
+                $roles[] = $result['role'];
+            }
+            return $roles;
+        } catch (\PDOException $e) {
+            return $roles;
+        }
+    }
+
+    /**
+     * Register one user to database.
+     *
+     * @param Array $data Associative array contains all necessary information
+     * @param string $password encoded password
+     *
+     * @access public
+     * @return Void
+     */
+    public function register($data, $password)
+    {
+        try {
+            $role = 2;
+            $query = 'INSERT INTO `users_blog`
+                (`login`, `password`, `role_id`)
+                VALUES (?, ?, ?)';
+            $this->db->executeQuery(
+                $query,
+                array(
+                    $data['login'],
+                    $password,
+                    $role
+                )
+            );
+        } catch (Exception $e) {
+            echo 'Caught exception: ' .  $e->getMessage() . "\n";
+        }
+    }
+
+    /**
+     * Get current logged user id
+     *
+     * @param $app
+     *
+     * @access public
+     * @return mixed
+     */
+    public function getIdCurrentUser($app)
+    {
+        $login = $this->getCurrentUser($app);
+        $iduser = $this->getUserByLogin($login);
+        return $iduser['id'];
+    }
+    /**
+     * Get information about actual logged user
+     *
+     * @param $app
+     *
+     * @access protected
+     * @return mixed
+     */
+    protected function getCurrentUser($app)
+    {
+        $token = $app['security']->getToken();
+        if (null !== $token) {
+            $user = $token->getUser()->getUsername();
+        }
+        return $user;
+    }
+    /**
+     * Check if user is logged
+     *
+     * @param Application $app
+     *
+     * @access public
+     * @return bool
+     */
+    public function isLoggedIn(Application $app)
+    {
+        if ('anon.' !== $user = $app['security']->getToken()->getUser()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    /**
+     * Gets current user info.
+     *
+     * @param $app
+     * @access public
+     *
+     * @return Array
+     */
+    public function getCurrentUserInfo($app)
+    {
+        $login = $this->getCurrentUsername($app);
+
+        $sql = 'SELECT id, login, role_id, name, surname FROM users_blog WHERE login = ?';
+        return $this->db->fetchAssoc($sql, array((string) $login));
+
+        return $info;
+    }
+    /**
+     * This method gets currently logged user.
+     *
+     * @access public
+     * @param application
+     *
+     * @return array $user
+     *
+     */
+    protected function getCurrentUsername($app)
+    {
+        $token = $app['security']->getToken();
+        if (null !== $token) {
+            $user = $token->getUser()->getUsername();
+        }
+        return $user;
+    }
+
+    /**
+     * Delete user
+     *
+     * @param $data
+     */
+    public function removeUser($data)
+    {
+        try {
+            if (($data['id'] != '') && ctype_digit((string)$data['id'])) {
+                $query = 'DELETE FROM users_blog WHERE id= ?';
+                return $this->db->delete('users_blog', array('id' => $data['id']));
+            } else {
+                return array();
+            }
+        } catch (Exception $e) {
+            echo 'Caught exception: ' .  $e->getMessage() . "\n";
+        }
+    }
+
+    /**
+     * Counts users pages.
+     *
+     * @access public
+     * @param integer $limit Number of records on single page
+     * @return integer Result
+     */
+    public function countUsersPages($limit)
+    {
+        try {
+            $pagesCount = 0;
+            $sql = 'SELECT COUNT(*) as pages_count FROM users_blog';
+            $result = $this->db->fetchAssoc($sql);
+            if ($result) {
+                $pagesCount =  ceil($result['pages_count']/$limit);
+            }
+            return $pagesCount;
+        } catch (Exception $e) {
+            echo 'Caught exception: ' .  $e->getMessage() . "\n";
+        }
+    }
+
+    /**
+     * Returns current user number.
+     *
+     * @access public
+     * @param integer $page Page number
+     * @param integer $pagesCount Number of all pages
+     * @return integer Page number
+     *
+     */
+    public function getCurrentPageNumber($page, $pagesCount)
+    {
+        try {
+            return (($page <= 1) || ($page > $pagesCount)) ? 1 : $page;
+        } catch (Exception $e) {
+            echo 'Caught exception: ' .  $e->getMessage() . "\n";
+        }
+    }
+
+    /**
+     * Get all users on page
+     *
+     * @access public
+     * @param integer $page Page number
+     * @param integer $limit Number of records on single page
+     * @param integer $pagesCount Number of all pages
+     * @retun array Result
+     */
+    public function getUsersPage($page, $limit)
+    {
+        try {
+            $sql = 'SELECT id, login, is_active FROM users_blog ORDER BY login ASC LIMIT :start, :limit';
+            $statement = $this->db->prepare($sql);
+            $statement->bindValue('start', ($page-1)*$limit, \PDO::PARAM_INT);
+            $statement->bindValue('limit', $limit, \PDO::PARAM_INT);
+            $statement->execute();
+            return $statement->fetchAll();
+        } catch (Exception $e) {
+            echo 'Caught exception: ' .  $e->getMessage() . "\n";
+        }
+    }
+
+    /**
+     * Gets users for pagination.
+     *
+     * @access public
+     * @param integer $page Page number
+     * @param integer $limit Number of records on single page
+     *
+     * @return array Result
+     */
+    public function getPaginatedUsers($page, $limit)
+    {
+        try {
+            $pagesCount = $this->countUsersPages($limit);
+
+            $page = $this->getCurrentPageNumber($page, $pagesCount);
+            $users = $this->getUsersPage($page, $limit);
+
+            return array(
+                'users' => $users,
+                'paginator' => array('page' => $page, 'pagesCount' => $pagesCount)
+            );
+        } catch (Exception $e) {
+            echo 'Caught exception: ' .  $e->getMessage() . "\n";
+        }
+    }
+
+    /**
+     * Update Activation
+     *
+     * @access public
+     * @param array $id usr id
+     * @param array $activation
+     * @retun mixed Result
+     */
+    public function updateActivation($id, $activation)
+    {
+        try {
+            if (ctype_digit((string)$id) && ctype_digit((string)$activation)) {
+                $query = "UPDATE users_blog SET is_active = ?  WHERE id = ?";
+                return $this->db->executeQuery(
+                    $query,
+                    array(
+                        (int)($activation),
+                        (int)($id)
+                    )
+                );
+            } else {
+                echo 'Caught exception: invalid parameters' . "\n";
+            }
+
+        } catch (Exception $e) {
+            echo 'Caught exception: ' .  $e->getMessage() . "\n";
+        }
+    }
+}

@@ -1,0 +1,39 @@
+{% extends 'base.twig' %}
+
+{% block title %}{{ 'Tags list'|trans }}{% endblock %}
+
+{% block heading %}{{ 'Tags list'|trans }}{% endblock %}
+
+{% block content %}
+
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                {% for flashMessage in app.session.getFlashBag.get('message') %}
+                    <div class="alert alert-{{ flashMessage.type }}" role="alert">
+                        {{ flashMessage.content }}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="text-center">
+                {% if is_granted('ROLE_ADMIN') %}
+                    <a href="{{ url('tags_add') }}" class="btn btn-success" title="{{ 'Add tag'|trans }}">
+                        {{ 'Add tag'|trans }}
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% for tag in tags %}
+        <div class="text-center">
+            <a href="{{ url('tags_view', {'id': tag.id}) }}" class="btn btn-primary">{{ tag.name|e }}</a>
+            </br>
+        </div>
+    {% endfor %}
+{% endblock %}
